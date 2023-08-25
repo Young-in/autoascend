@@ -10,6 +10,7 @@ import termios
 import tty
 from pathlib import Path
 from pprint import pprint
+import h5py
 
 import nle.nethack as nh
 
@@ -81,6 +82,8 @@ class EnvWrapper:
 
         self.is_done = False
 
+        self.history = []
+
     def _init_agent(self):
         self.agent = agent_lib.Agent(self, **self.agent_args)
 
@@ -106,6 +109,7 @@ class EnvWrapper:
         self.end_reason = ''
         self.last_observation = obs
         self.is_done = False
+        self.history = []
 
         if self.agent is not None:
             self.render()
@@ -280,7 +284,7 @@ class EnvWrapper:
                 self.visualizer.force_next_frame()
                 return None
             else:
-                actions = [a for a in self.env._actions if int(a) == key]
+                actions = [a for a in self.env.actions if int(a) == key]
                 assert len(actions) < 2
                 if len(actions) == 0:
                     print('wrong key', key)
@@ -318,8 +322,19 @@ class EnvWrapper:
             if self.visualizer is not None:
                 self.visualizer.step(self.last_observation, repr(chr(int(agent_action))))
             action = agent_action
-
-        obs, reward, done, info = self.env.step(self.env._actions.index(action))
+        
+        log_dict = {
+            'step': self.step_count,
+            'tty_chars': self.last_observation['tty_chars'],
+            'tty_colors': self.last_observation['tty_colors'],
+            'tty_cursor': self.last_observation['tty_cursor'],
+            'strategy': self.agent.current_strategy,
+            'act': action,
+        }
+        
+        self.history.append(log_dict)
+        
+        obs, reward, done, info = self.env.step(self.env.actions.index(action))
         self.score += reward
         self.step_count += 1
         # if not done:
@@ -383,6 +398,6 @@ class EnvWrapper:
             'panic_num': len(self.agent.all_panics),
             'character': str(self.agent.character).split()[0],
             'end_reason': self.end_reason,
-            'seed': self.env.get_seeds(),
+            # 'seed': self.env.get_seeds(),
             **self.agent.stats_logger.get_stats_dict(),
         }

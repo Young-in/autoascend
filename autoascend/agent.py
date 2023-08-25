@@ -23,7 +23,7 @@ from .stats_logger import StatsLogger
 from .strategy import Strategy
 
 BLStats = namedtuple('BLStats',
-                     'x y strength_percentage strength dexterity constitution intelligence wisdom charisma score hitpoints max_hitpoints depth gold energy max_energy armor_class monster_level experience_level experience_points time hunger_state carrying_capacity dungeon_number level_number prop_mask')
+                     'x y strength_percentage strength dexterity constitution intelligence wisdom charisma score hitpoints max_hitpoints depth gold energy max_energy armor_class monster_level experience_level experience_points time hunger_state carrying_capacity dungeon_number level_number prop_mask align')
 
 
 class Agent:
@@ -85,6 +85,8 @@ class Agent:
         # combat.rl_scoring.init_fight2_model(self)
 
         self.stats_logger = StatsLogger()
+
+        self.current_strategy = "initial"
 
     @property
     def has_pet(self):
@@ -1132,6 +1134,7 @@ class Agent:
             if not yielded:
                 yielded = True
                 yield True
+                self.current_strategy = "fight2"
                 self.character.parse_enhance_view()
                 # self.character.parse_spellcast_view()
 
@@ -1243,6 +1246,7 @@ class Agent:
         if not utils.any_in(self.glyphs, G.SWALLOW):
             yield False
         yield True
+        self.current_strategy = "engulfed_fight"
         while True:
             mask = utils.isin(self.glyphs, G.SWALLOW)
             if not mask.any():
@@ -1356,6 +1360,7 @@ class Agent:
             if not yielded:
                 yielded = True
                 yield True
+                self.current_strategy = "eat_corpses_from_ground"
             self.go_to(target_y, target_x, debug_tiles_args=dict(color=(255, 255, 0), is_path=True))
 
         # TODO: checking level.corpses_to_eat again (moving to non-existing corpses often)
@@ -1370,6 +1375,7 @@ class Agent:
                         if not yielded:
                             yielded = True
                             yield True
+                            self.current_strategy = "eat_corpses_from_ground"
                         self.inventory.eat(item)
 
             if not yielded:
@@ -1428,6 +1434,7 @@ class Agent:
                  or self.blstats.hitpoints < 8) and items
         ):
             yield True
+            self.current_strategy = "emergency_strategy"
             self.inventory.quaff(items[0])
             return
 
@@ -1435,6 +1442,7 @@ class Agent:
                  item.category == nh.POTION_CLASS and item.object.name in ['fruit juice']]
         if items and self.blstats.hunger_state >= Hunger.FAINTING:
             yield True
+            self.current_strategy = "emergency_strategy"
             self.inventory.quaff(items[0])
             return
 
@@ -1445,6 +1453,7 @@ class Agent:
                 or (self.is_safe_to_pray(400) and self.blstats.hunger_state >= Hunger.FAINTING)
         ):
             yield True
+            self.current_strategy = "emergency_strategy"
             self.pray()
             return
 
@@ -1471,6 +1480,7 @@ class Agent:
                     (not item.is_corpse() or
                      item.monster_id in [MON.from_name(n) - nh.GLYPH_MON_OFF for n in ['lizard', 'lichen']]):
                 yield True
+                self.current_strategy = "eat_from_inventory"
                 self.inventory.eat(item)
                 return
         yield False
@@ -1483,6 +1493,7 @@ class Agent:
             for item in flatten_items(self.inventory.items):
                 if item.objs[0].name == 'sprig of wolfsbane':
                     yield True
+                    self.current_strategy = "cure_desease"
                     self.inventory.eat(item)
                     return
 
@@ -1490,12 +1501,14 @@ class Agent:
             for item in flatten_items(self.inventory.items):
                 if item.objs[0].name == 'water' and item.status == Item.BLESSED:
                     yield True
+                    self.current_strategy = "cure_desease"
                     self.inventory.quaff(item)
                     return
 
             # pray
             if self.is_safe_to_pray():
                 yield True
+                self.current_strategy = "cure_desease"
                 self.pray()
                 return
 

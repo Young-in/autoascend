@@ -185,6 +185,7 @@ class GlobalLogic:
         if not utils.isin(self.agent.current_level().objects, G.TRAPS).any():
             yield False
         yield True
+        self.agent.current_strategy = "solve_sokoban_strategy"
 
         def push_bolder(ty, tx, dy, dx):
             while 1:
@@ -325,6 +326,7 @@ class GlobalLogic:
                 self.agent.character.prop.polymorph):
             if not yielded:
                 yield True
+                self.agent.current_strategy = "wait_out_unexpected_state_strategy"
                 yielded = True
 
             self.agent.direction('.')
@@ -385,6 +387,7 @@ class GlobalLogic:
         if excalibur_candidate() is None:
             yield False
         yield True
+        self.agent.current_strategy = "dip_for_excalibur"
 
         self.agent.go_to(*list(zip(*mask.nonzero()))[0])
 
@@ -451,6 +454,7 @@ class GlobalLogic:
             yield False
 
         yield True
+        self.agent.current_strategy = "offer_corpses"
 
         y, x = min(altars, key=lambda p: dis[p])
         self.agent.go_to(y, x)
@@ -493,6 +497,7 @@ class GlobalLogic:
 
         if any(item.category == nh.COIN_CLASS for item in flatten_items(self.agent.inventory.items)):
             yield True
+            self.agent.current_strategy = "follow_guard"
             # if 'Please drop that gold and follow me.' in self.message:
             self.agent.stats_logger.log_event('drop_gold')
             self.item_priority._drop_gold_till_turn = self.agent.blstats.time + 100
@@ -506,12 +511,14 @@ class GlobalLogic:
             yield False
 
         yield True
+        self.agent.current_strategy = "follow_guard"
 
         self.agent.go_to(y, x, stop_one_before=True)
 
     @Strategy.wrap
     def current_strategy(self):
         yield True
+        self.agent.current_strategy = "current_strategy"
         while 1:
             explore_stairs_condition = lambda: False
             if self.milestone == Milestone.BE_ON_FIRST_LEVEL:

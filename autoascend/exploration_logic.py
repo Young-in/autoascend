@@ -102,6 +102,7 @@ class ExplorationLogic:
         if len(unexplored_stairs) == 0:
             yield False
         yield True
+        self.agent.current_strategy = "explore_stairs"
 
         y, x = list(unexplored_stairs)[self.agent.rng.randint(0, len(unexplored_stairs))]
         glyph = self.agent.current_level().objects[y, x]
@@ -123,6 +124,7 @@ class ExplorationLogic:
         if not path:
             yield False
         yield True
+        self.agent.current_strategy = "follow_level_path_strategy"
         for (y, x), _, dir in path:
             go_to_strategy(y, x).run()
             assert (self.agent.blstats.y, self.agent.blstats.x) == (y, x)
@@ -137,6 +139,7 @@ class ExplorationLogic:
     @Strategy.wrap
     def go_to_level_strategy(self, dungeon_number, level_number, go_to_strategy, explore_strategy):
         yield True
+        self.agent.current_strategy = "go_to_level_strategy"
         while 1:
             levels_to_search = self.levels_to_explore_to_get_to(dungeon_number, level_number)
             if len(levels_to_search) == 0:
@@ -159,6 +162,7 @@ class ExplorationLogic:
                         exploration_levels[self.agent.current_level().key()] < min_exploration_level + 150:
                     yield False
                 yield True
+                self.agent.current_strategy = "go_to_least_explored_level"
 
                 for level in levels_to_search:
                     if exploration_levels[level] == min_exploration_level:
@@ -194,6 +198,7 @@ class ExplorationLogic:
         if self.agent.bfs()[y, x] == -1 or (self.agent.blstats.y, self.agent.blstats.x) == (y, x):
             yield False
         yield True
+        self.agent.current_strategy = "go_to_strategy"
         return self.agent.go_to(y, x, *args, **kwargs)
 
     @Strategy.wrap
@@ -215,6 +220,7 @@ class ExplorationLogic:
         if search_count == 0:
             yield False
         yield True
+        self.agent.current_strategy = "search_neighbors_for_traps"
 
         for _ in range(search_count):
             self.agent.search()
@@ -225,6 +231,7 @@ class ExplorationLogic:
         pos = (self.agent.blstats.y, self.agent.blstats.x)
         if pos in level.altars and level.altars[pos] == Character.UNKNOWN:
             yield True
+            self.agent.current_strategy = "check_altar"
             with self.agent.atom_operation():
                 self.agent.step(A.Command.LOOK)
                 r = re.search(r'There is an altar to [a-zA-Z- ]+ \(([a-z]+)\) here.', self.agent.message or self.agent.popup[0])
@@ -250,6 +257,7 @@ class ExplorationLogic:
                 return
             if not yielded:
                 yield True
+                self.agent.current_strategy = "patrol"
                 yielded = True
 
 
@@ -273,6 +281,7 @@ class ExplorationLogic:
                     if not yielded:
                         yielded = True
                         yield True
+                        self.agent.current_strategy = "open_neighbor_doors"
                     with self.agent.panic_if_position_changes():
                         if not self.agent.open_door(py, px):
                             if not 'locked' in self.agent.message:
@@ -364,6 +373,7 @@ class ExplorationLogic:
                     if not yielded:
                         yielded = True
                         yield True
+                        self.agent.current_strategy = "open_visit_search"
                     self.check_altar().run()
                     continue
 
@@ -371,6 +381,7 @@ class ExplorationLogic:
                     if not yielded:
                         yielded = True
                         yield True
+                        self.agent.current_strategy = "open_visit_search"
                     open_neighbor_doors().run()
                     continue
 
@@ -419,6 +430,7 @@ class ExplorationLogic:
                 if not yielded:
                     yielded = True
                     yield True
+                    self.agent.current_strategy = "open_visit_search"
 
                 # select random closest to_explore tile
                 i = self.agent.rng.randint(len(nonzero_y))
@@ -499,6 +511,7 @@ class ExplorationLogic:
             yield False
             return
         yield True
+        self.agent.current_strategy = "untrap_traps"
 
         closest_y, closest_x = trap_mask.nonzero()
         target_y, target_x = closest_y[0], closest_x[0]

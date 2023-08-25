@@ -872,6 +872,7 @@ class Inventory:
                     if not yielded:
                         yielded = True
                         yield True
+                        self.agent.current_strategy = "arrange_items"
 
                     self.use_container(container, [all_items[i] for i in indices], [],
                                        items_to_put_counts=[counts[i] for i in indices])
@@ -888,6 +889,7 @@ class Inventory:
                 if not yielded:
                     yielded = True
                     yield True
+                    self.agent.current_strategy = "arrange_items"
                 assert self.drop([free_items[i] for i in indices], [free_items[i].count - counts[i] for i in indices],
                                  smart=False)
                 continue
@@ -913,6 +915,7 @@ class Inventory:
                 if not yielded:
                     yielded = True
                     yield True
+                    self.agent.current_strategy = "arrange_items"
 
                 assert self.items.free_slots() > 0
                 indices = indices[:self.items.free_slots()]
@@ -934,6 +937,7 @@ class Inventory:
                 if not yielded:
                     yielded = True
                     yield True
+                    self.agent.current_strategy = "arrange_items"
                 assert self.pickup([items_below_me[i] for i in indices], [to_pickup[i] for i in indices])
                 continue
 
@@ -1038,6 +1042,7 @@ class Inventory:
 
             if not yielded:
                 yield True
+                self.agent.current_strategy = "wand_engrave_identify"
             yielded = True
             self.skip_engrave_counter = 8
 
@@ -1186,6 +1191,7 @@ class Inventory:
                     if not yielded:
                         yielded = True
                         yield True
+                        self.agent.current_strategy = "wear_best_stuff"
                     if (slot == O.ARM_SHIRT or slot == O.ARM_SUIT) and self.items.cloak is not None:
                         self.takeoff(self.items.cloak)
                         break
@@ -1221,6 +1227,7 @@ class Inventory:
         if not mask.any():
             yield False
         yield True
+        self.agent.current_strategy = "check_items"
 
         nonzero_y, nonzero_x = (mask & (dis == dis[mask].min())).nonzero()
         i = self.agent.rng.randint(len(nonzero_y))
@@ -1249,6 +1256,7 @@ class Inventory:
         if not mask.any():
             yield False
         yield True
+        self.agent.current_strategy = "go_to_unchecked_containers"
 
         nonzero_y, nonzero_x = (mask & (dis == dis[mask].min())).nonzero()
         i = self.agent.rng.randint(len(nonzero_y))
@@ -1266,6 +1274,7 @@ class Inventory:
                 if not yielded:
                     yielded = True
                     yield True
+                    self.agent.current_strategy = "check_containers"
                 if item.is_chest() and not (item.is_unambiguous() and item.object.name == 'ice box'):
                     fail_msg = self.agent.untrap_container_below_me()
                     if fail_msg is not None and check_if_triggered_container_trap(fail_msg):
@@ -1310,6 +1319,7 @@ class Inventory:
         if sum(counts) == 0:
             yield False
         yield True
+        self.agent.current_strategy = "go_to_item_to_pickup"
 
         for (i, _), c in sorted(zip(items.items(), counts), key=lambda x: dis[x[0][1]]):
             if c != 0:
