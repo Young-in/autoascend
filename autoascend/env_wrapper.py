@@ -120,6 +120,10 @@ class EnvWrapper:
         assert obs['chars'][blstats.y, blstats.x] == ord('@')
 
         return obs
+    
+    def seed(self, core=None, disp=None, reseed=False):
+        self.env.seed(core, disp, reseed)
+        return (core, disp, reseed)
 
     def fork(self):
         fork_again = True
@@ -398,6 +402,6 @@ class EnvWrapper:
             'panic_num': len(self.agent.all_panics),
             'character': str(self.agent.character).split()[0],
             'end_reason': self.end_reason,
-            # 'seed': self.env.get_seeds(),
+            'seed': self.env.get_seeds(),
             **self.agent.stats_logger.get_stats_dict(),
         }
